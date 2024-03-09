@@ -1,4 +1,4 @@
-import { serverURL } from "../../config";
+import { serverURL } from "../config";
 
 export const dataFetch = async (
 	url: string,
