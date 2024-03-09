@@ -1,1 +1,1 @@
-export {}
+export { default as CameraComponent } from "./camera/camera";
