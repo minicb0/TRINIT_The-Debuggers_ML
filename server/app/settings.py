@@ -15,4 +15,5 @@ MONGODB_SETTINGS = {
 
 DEBUG = env['DEBUG'] == 'True'
 
-PORT = 5000
+HOST = env["HOST"]
+PORT = int(env["PORT"])

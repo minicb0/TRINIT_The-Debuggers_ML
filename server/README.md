@@ -27,4 +27,4 @@ cp .env.example .env
 python main.py
 ```
 
-Server will be started at [http://127.0.0.1:5000](http://127.0.0.1:5000)
+Server will be started at [http://0.0.0.0:5000](http://0.0.0.0:5000)
