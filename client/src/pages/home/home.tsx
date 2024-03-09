@@ -6,7 +6,11 @@ const Home = (): JSX.Element => {
 		<>
 			<div className={styles.section} >
 				<h1 className={styles.header}>Automated Road Damage Detection for Infrastructure Maintenance</h1>
-				<CameraComponent />
+				<h2 className={styles.subheader}>(By The Debuggers Team)</h2>
+				
+				<div className={styles.camera}>
+					<CameraComponent />
+				</div>
 			</div>
 		</>
 	);
