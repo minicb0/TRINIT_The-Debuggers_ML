@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import socketIOClient from 'socket.io-client';
 import Box from '@mui/material/Box';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
@@ -14,9 +15,22 @@ import FilterCenterFocusIcon from '@mui/icons-material/FilterCenterFocus';
 import ReplayIcon from '@mui/icons-material/Replay';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { serverURL } from '../../config';
 import styles from "./styles.module.css";
 
+enum ImageSource {
+    capture,
+    realTime,
+    upload,
+}
+
+interface ModelResponse {
+    image: string,
+    from: ImageSource
+}
+
 const CameraComponent: React.FC = () => {
+    const socket = socketIOClient(serverURL + '/stream');
 
     const [value, setValue] = React.useState(0);
     const handleChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -252,6 +266,83 @@ const CameraComponent: React.FC = () => {
         }
     };
 
+    const convertBase64 = (file: any) => {
+        return new Promise((resolve, reject) => {
+            const fileReader = new FileReader();
+            fileReader.readAsDataURL(file)
+            fileReader.onload = () => {
+                resolve(fileReader.result);
+            }
+            fileReader.onerror = (error) => {
+                reject(error);
+            }
+        })
+    }
+
+    const handleUploadImageSubmit = async (from: ImageSource) => {
+        console.log("Clicked..")
+        console.log(selectedFile)
+
+        const base64 = await convertBase64(selectedFile)
+        socket.emit("detect", {
+            "image": base64,
+            "from": from
+        });
+
+        setSelectedFile(null);
+    };
+
+    const handleCapturedImageSubmit = async (from: ImageSource) => {
+        console.log("Captured Submitted..")
+        console.log(capturedImage)
+
+        // const base64 = await convertBase64(selectedFile)
+        socket.emit("detect", {
+            "image": capturedImage,
+            "from": from
+        });
+
+        setCapturedImage("");
+    }
+
+    const convertBase64ToFile = (image: string): File => {
+        const byteString = atob(image.split(',')[1]);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+
+        for (let i = 0; i < byteString.length; i += 1) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+
+        const newBlob = new Blob([ab], {
+            type: 'image/jpeg',
+        });
+
+        return new File([newBlob], "Detected Image", {
+            'type': newBlob.type
+        });
+    };
+
+    socket.on('output', (response: ModelResponse) => {
+        console.log(response)
+        switch (response.from) {
+            case ImageSource.capture: {
+                console.log("Captured image recieved");
+                setCapturedImage(response.image);
+                break;
+            }
+            case ImageSource.upload: {
+                console.log("Uploaded image recieved..");
+                const file = convertBase64ToFile(response.image);
+                console.log(file)
+                setSelectedFile(file);
+                break;
+            }
+            case ImageSource.realTime: {
+                // TODO:
+            }
+        }
+    });
 
 
     // const handleCameraChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -286,7 +377,7 @@ const CameraComponent: React.FC = () => {
 
     return (
         <div className={styles.container}>
-            <Tabs value={value} onChange={handleChange} >
+            <Tabs value={value} onChange={handleChange} centered >
                 <Tab icon={<UploadFileIcon />} iconPosition="start" label="Upload Image or Video" />
                 <Tab icon={<CameraAltIcon />} iconPosition="start" label="Capture a Image" />
                 <Tab icon={<VideoCameraBackIcon />} iconPosition="start" label="Real Time Detection" />
@@ -296,13 +387,17 @@ const CameraComponent: React.FC = () => {
                 <>
                     <input className={styles.inputFile} type="file" accept="image/*, video/*" onChange={handleFileChange} />
                     {selectedFile && (
-                        <div>
+                        <><div>
                             <p>Selected File: {selectedFile.name}</p>
                             <p>Type: {selectedFile.type}</p>
                             {filePreview && selectedFile.type.startsWith('image') && (
                                 <img src={filePreview} alt="Selected" style={{ maxWidth: '100%', maxHeight: '400px' }} />
                             )}
                         </div>
+                            <button className={styles.green} onClick={() => (handleUploadImageSubmit(ImageSource.upload))}> <div className={styles.flex}>
+                                Upload Image
+                                <CloudUploadIcon />
+                            </div></button></>
                     )}
                 </>
             )}
@@ -378,7 +473,7 @@ const CameraComponent: React.FC = () => {
                                             <ReplayIcon />
                                         </div>
                                     </button>
-                                    <button onClick={handleRetake} className={styles.green}>
+                                    <button onClick={() => handleCapturedImageSubmit(ImageSource.capture)} className={styles.green}>
                                         <div className={styles.flex}>
                                             Upload Image
                                             <CloudUploadIcon />

@@ -4,6 +4,7 @@ from flask import Flask, render_template
 from flask_cors import CORS
 
 from app.socket.websocket import socketio
+from app.socket.events import register_events
 
 from app.utils.db import db
 from app import settings
@@ -24,6 +25,8 @@ logger = logging.getLogger()
 db.init_app(app)
 socketio.init_app(app)
 CORS(app)
+
+register_events(socketio)
 
 @app.errorhandler(404)
 def page_not_found(_):
