@@ -24,7 +24,7 @@ logger = logging.getLogger()
 
 db.init_app(app)
 socketio.init_app(app)
-CORS(app)
+CORS(app, origins=["*"])
 
 register_events(socketio)
 

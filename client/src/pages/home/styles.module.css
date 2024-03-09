@@ -23,3 +23,15 @@
     margin-top: 50px;
     /* height: 95vh; */
 }
+
+@media screen and (max-width:900px) {
+    .header {
+        width: 96%;
+        font-size: 25px;
+    }
+
+    .subheader {
+        width: 96%;
+        font-size: 20px;
+    }
+}

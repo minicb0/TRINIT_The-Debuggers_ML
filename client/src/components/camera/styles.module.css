@@ -22,6 +22,7 @@
     justify-content: center;
     align-items: center;
     margin-right: 5px;
+    min-width: 180px;
 }
 
 .red {
@@ -38,6 +39,7 @@
     justify-content: center;
     align-items: center;
     margin-right: 5px;
+    min-width: 180px;
 }
 
 .blue {
@@ -55,6 +57,7 @@
     align-items: center;
     margin: auto;
     margin-top: 5px;
+    min-width: 180px;
 }
 
 button:hover {
@@ -85,6 +88,7 @@ button:hover {
     height: 500px;
     border-radius: 5px;
     border: 3px solid rgb(168, 168, 168);
+    max-width: 96%;
 }
 
 .video {
@@ -120,3 +124,31 @@ button:hover {
     margin: auto;
     margin-top: 5px;
 }
+
+.canvas {
+    margin-top: 10px;
+    height: 500px;
+    border-radius: 5px;
+    border: 3px solid rgb(168, 168, 168);
+    max-width: 100%;
+}
+
+@media screen and (max-width:1300px) {
+    .container {
+        width: 98%;
+    }
+}
+
+@media screen and (max-width:800px) {
+    .inputFile {
+        height: 45px;
+        border-radius: 5px;
+        padding: 10px;
+        font-size: 13px;
+        text-align: center;
+        
+    }
+    
+}
+
+

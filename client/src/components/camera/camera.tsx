@@ -41,6 +41,8 @@ const CameraComponent: React.FC = () => {
     const [mediaStream1, setMediaStream1] = useState<MediaStream | null>(null);
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const canvasRef2 = useRef<HTMLCanvasElement>(null);
     const videoRef1 = useRef<HTMLVideoElement>(null);
     const [isCameraOn1, setIsCameraOn1] = useState(false);
     const [isCameraOn, setIsCameraOn] = useState(false);
@@ -50,22 +52,58 @@ const CameraComponent: React.FC = () => {
     const [selectedCameraName, setSelectedCameraName] = useState<string>('');
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
+    const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null >(null);
     const [filePreview, setFilePreview] = useState<string | null>(null);
 
     // const [mediaStream, setMediaStream] = useState(null);
 
     //   const videoRef = useRef(null);
 
-    const handleToggleCamera = async () => {
+    const handleLiveStreamInput = (from: ImageSource) => {
+        console.log("Print..")
+
+        console.log(videoRef.current);
+
+        if (videoRef.current === null) {
+            console.log("video ref.current is null")
+            return;
+        }
+
+        const canvas = canvasRef.current;
+
+        if (canvas !== null) {
+            const context = canvas.getContext('2d');
+
+            if (context === null) {
+                console.log("context is null..\n");
+                return;
+            }
+
+            context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+            const base64 = canvas.toDataURL('image/jpeg');
+            console.log(base64.substring(0, 50));
+            socket.emit("detect", {
+                "image": base64,
+                "from": from
+            });
+        } else {
+            console.log("Canvas is null?")
+        }
+    }
+
+    const handleToggleCamera = async (from: ImageSource) => {
         if (!isCameraOn) {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 setMediaStream(stream);
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
+                    
+                    const id = setInterval(handleLiveStreamInput, 100, from);
+                    console.log(id);
+                    setIntervalId(id);
                 } else {
-                    handleToggleCamera();
+                    handleToggleCamera(from);
                 }
                 setIsCameraOn(true);
             } catch (err) {
@@ -76,6 +114,11 @@ const CameraComponent: React.FC = () => {
                 mediaStream.getTracks().forEach(track => track.stop());
                 setMediaStream(null);
                 setIsCameraOn(false);
+                console.log("Removing..");
+                console.log(intervalId);
+                if (intervalId !== null) {
+                    clearInterval(intervalId);
+                }
             }
         }
     };
@@ -339,7 +382,27 @@ const CameraComponent: React.FC = () => {
                 break;
             }
             case ImageSource.realTime: {
-                // TODO:
+                console.log("Realtime image recieved");
+                const imageBase64 = response.image;
+                const canvas = canvasRef2.current;
+
+                if (canvas !== null) {
+                    const context = canvas.getContext('2d');
+
+                    if (context === null) {
+                        console.log("context is null..\n");
+                        return;
+                    }
+
+                    const image = new Image();
+                    image.onload = () => {
+                        console.log("Drawing..");
+                        context.drawImage(image, 0, 0);
+                    }
+                    image.src = imageBase64;
+                } else {
+                    console.log("Canvas is null")
+                }
             }
         }
     });
@@ -377,7 +440,7 @@ const CameraComponent: React.FC = () => {
 
     return (
         <div className={styles.container}>
-            <Tabs value={value} onChange={handleChange} centered >
+            <Tabs value={value} onChange={handleChange} variant="scrollable" scrollButtons allowScrollButtonsMobile >
                 <Tab icon={<UploadFileIcon />} iconPosition="start" label="Upload Image or Video" />
                 <Tab icon={<CameraAltIcon />} iconPosition="start" label="Capture a Image" />
                 <Tab icon={<VideoCameraBackIcon />} iconPosition="start" label="Real Time Detection" />
@@ -491,7 +554,7 @@ const CameraComponent: React.FC = () => {
                     <div className={styles.value2Div}>
                         {!isCameraOn && (
                             <>
-                                <button onClick={handleToggleCamera} className={styles.green}>
+                                <button onClick={() => handleToggleCamera(ImageSource.realTime)} className={styles.green}>
                                     <div className={styles.flex}>
                                         Start Camera
                                         <RadioButtonCheckedIcon />
@@ -501,7 +564,7 @@ const CameraComponent: React.FC = () => {
                         )}
                         {isCameraOn && (
                             <>
-                                <button onClick={handleToggleCamera} className={styles.red}>
+                                <button onClick={() => handleToggleCamera(ImageSource.realTime)} className={styles.red}>
                                     <div className={styles.flex}>
                                         Stop Camera
                                         <StopCircleIcon />
@@ -526,7 +589,9 @@ const CameraComponent: React.FC = () => {
                     </div>
                     {isCameraOn && (
                         <div className={styles.video} >
-                            <video ref={videoRef} autoPlay playsInline />
+                            <canvas className={styles.canvas} ref={canvasRef2} />
+                            <canvas ref={canvasRef} style={{ display: 'none' }} />
+                            <video ref={videoRef} autoPlay playsInline style={{ display: "none" }} />
                         </div>
                     )}
                 </>
